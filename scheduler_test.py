@@ -1,16 +1,15 @@
-# Example Test for Round Robin Scheduler
+# test_day3.py
 from scheduler.process import Process
-from scheduler.round_robin import round_robin_schedule
+from scheduler.fcfs import fcfs_schedule
+from scheduler.metrics import calculate_metrics
 
-# Define sample processes
 jobs = [
     Process(pid=1, arrival_time=0, burst_time=5),
-    Process(pid=2, arrival_time=1, burst_time=3),
-    Process(pid=3, arrival_time=2, burst_time=1),
+    Process(pid=2, arrival_time=2, burst_time=3),
+    Process(pid=3, arrival_time=4, burst_time=1),
 ]
-# Run scheduler with time quantum = 2
-finished_jobs = round_robin_schedule(jobs, time_quantum=2)
 
-# Display results
-for p in finished_jobs:
-    print(f"PID={p.pid}, Start={p.start_time}, Finish={p.finish_time}, Remaining={p.remaining_time}")
+done = fcfs_schedule(jobs)
+metrics = calculate_metrics(done)
+
+print("Metrics:", metrics)
