@@ -44,6 +44,7 @@ def get_metrics(
 
     # Return only the core metrics fields
     return {
+        "algorithm_used" : algo,
         "average_turnaround_time": result["average_turnaround_time"],
         "average_waiting_time": result["average_waiting_time"],
         "process_count": result["process_count"]

@@ -7,6 +7,7 @@ class JobRequest(BaseModel):
     burst_time: int
 
 class MetricsResponse(BaseModel):
+    algorithm_used : str
     average_turnaround_time: float
     average_waiting_time: float
     process_count: int
