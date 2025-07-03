@@ -32,20 +32,34 @@ def get_metrics(
     algo: str = Query("fcfs", description="Scheduling algorithm: 'fcfs' or 'rr'"),
     quantum: int = Query(2, gt=0, description="Time quantum for Round Robin")
 ):
-    # this function lets us choose between available schedulers
     if not jobs:
         raise HTTPException(status_code=404, detail="No jobs submitted yet")
 
+    # Instantiate simulator correctly
+    sim = Simulator(algorithm=algo, quantum=quantum)
+
+    # Submit all jobs
+    for proc in jobs:
+        sim.submit(
+            pid=proc.pid,
+            arrival_time=proc.arrival_time,
+            burst_time=proc.burst_time,
+            priority=proc.priority
+        )
+
+    # Run and get metrics
     try:
-        # Use a copy so we don’t mutate the original job list
-        result = Simulator(jobs.copy(), algo, quantum)
+        sim.run()
+        result = sim.get_metrics()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Return only the core metrics fields
     return {
-        "algorithm_used" : algo,
+        "algorithm": algo,
         "average_turnaround_time": result["average_turnaround_time"],
         "average_waiting_time": result["average_waiting_time"],
-        "process_count": result["process_count"]
+        "process_count": result["process_count"],
+        "details": result.get("details")
     }
