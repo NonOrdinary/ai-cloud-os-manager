@@ -1,12 +1,16 @@
 # api/main.py
 
 from fastapi import FastAPI
-from .routes import router
+from .routes import router as api_router
+from .ws import router as ws_router
 
 app = FastAPI(
-    title="AI-OS Process Manager API",
-    description="Submit jobs and fetch scheduling metrics",
+    title="AI-OS Enhanced Process Manager API with Live WS",
     version="0.1.0"
 )
 
-app.include_router(router)
+# HTTP routes
+app.include_router(api_router)
+
+# WebSocket routes
+app.include_router(ws_router)
