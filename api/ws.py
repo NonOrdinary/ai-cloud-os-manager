@@ -3,6 +3,8 @@
 import asyncio
 from typing import List
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+# Import the core Simulator
 from scheduler.simulator import Simulator
 
 router = APIRouter()
@@ -32,16 +34,17 @@ manager = ConnectionManager()
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """
-    Expects the client to send a JSON payload on connect:
+    Expects initial JSON payload:
       {
         "jobs": [ { "pid":1, "arrival_time":0, "burst_time":5 }, … ],
         "algo": "rr",              # or "fcfs"
-        "quantum": 2               # only needed for RR
+        "quantum": 2               # only for RR
       }
-    Then simulates, sending events:
+
+    Then streams:
       - { "event": "start",  "pid": X, "time": t }
       - { "event": "finish", "pid": X, "time": t }
-      - finally: { "event": "metrics", ... }
+      - { "event": "metrics", ... }
     """
     await manager.connect(websocket)
     try:
@@ -50,7 +53,7 @@ async def websocket_endpoint(websocket: WebSocket):
         algo      = data.get("algo", "fcfs")
         quantum   = data.get("quantum", 2)
 
-        # Set up simulator
+        # Initialize Simulator
         sim = Simulator(algorithm=algo, quantum=quantum)
         for job in jobs_data:
             sim.submit(
@@ -59,25 +62,22 @@ async def websocket_endpoint(websocket: WebSocket):
                 burst_time=job["burst_time"]
             )
 
-        # Run live: emit start/finish per process
-        # Here we step through sim.jobs in submission order
+        # Emit start/finish for each job
         current_time = 0
         for proc in sim.jobs:
-            # start event
             await manager.send_json(
                 {"event": "start", "pid": proc.pid, "time": current_time},
                 websocket
             )
-            # simulate time passing (optional delay for demo)
+            # Optional artificial delay for demo
             await asyncio.sleep(0.5)
-            # finish event
             current_time += proc.burst_time
             await manager.send_json(
                 {"event": "finish", "pid": proc.pid, "time": current_time},
                 websocket
             )
 
-        # Final metrics
+        # Finally run full simulation to collect metrics
         sim.run()
         metrics = sim.get_metrics()
         await manager.send_json({"event": "metrics", **metrics}, websocket)

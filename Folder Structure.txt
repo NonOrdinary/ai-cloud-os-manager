@@ -20,6 +20,7 @@ ai_os_process_manager/
 │   ├── main.py             # FastAPI app entrypoint
 │   ├── models.py           # Pydantic data models
 │   ├── routes.py           # Endpoint definitions
+│   ├── simulator.py        # Endpoint for accessing scheduler
 │   └── ws.py               # WebSocket manager
 ├── frontend/               # React dashboard
 │   ├── package.json

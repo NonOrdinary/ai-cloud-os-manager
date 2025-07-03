@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List
 
 from .models import JobRequest, MetricsResponse
-from .simulate import simulate
+from scheduler.simulator import Simulator
 from scheduler.process import Process
 
 router = APIRouter()
@@ -38,7 +38,7 @@ def get_metrics(
 
     try:
         # Use a copy so we don’t mutate the original job list
-        result = simulate(jobs.copy(), algo, quantum)
+        result = Simulator(jobs.copy(), algo, quantum)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
