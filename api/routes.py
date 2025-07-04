@@ -47,7 +47,7 @@ def get_metrics(
             priority=proc.priority
         )
 
-    # Run and get metrics
+    # Run and get metric
     try:
         sim.run()
         result = sim.get_metrics()
