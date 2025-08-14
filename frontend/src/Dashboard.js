@@ -1,8 +1,9 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { createWebSocket } from "./wsClient";
-import JobForm from "./components/jobform";
+import JobForm from "./components/JobForm";
 import GanttChart from "./components/GanttChart"; // if you have this component
+
 
 
 /**
