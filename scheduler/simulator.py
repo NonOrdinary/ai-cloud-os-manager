@@ -17,19 +17,20 @@ class Simulator:
         self.quantum = quantum
         self.jobs: List[Process] = []
         self.finished: List[Process] = []
+        self.timeline: List[tuple] = [] 
 
     def submit(self, pid: int, arrival_time: int, burst_time: int, priority: int = 0):
         proc = Process(pid=pid, arrival_time=arrival_time, burst_time=burst_time, priority=priority)
         self.jobs.append(proc)
 
     def run(self):
-        # Copy jobs so we don't mutate originals
         jobs_copy = [Process(p.pid, p.arrival_time, p.burst_time, p.priority) for p in self.jobs]
 
+        # Update to unpack both return values
         if self.algorithm == "fcfs":
-            self.finished = fcfs_schedule(jobs_copy)
+            self.finished, self.timeline = fcfs_schedule(jobs_copy)
         elif self.algorithm == "rr":
-            self.finished = round_robin_schedule(jobs_copy, time_quantum=self.quantum)
+            self.finished, self.timeline = round_robin_schedule(jobs_copy, time_quantum=self.quantum)
         else:
             raise ValueError(f"Unsupported algorithm: {self.algorithm!r}")
 

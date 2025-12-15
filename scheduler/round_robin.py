@@ -1,9 +1,9 @@
-from typing import List
+from typing import List,Tuple
 from collections import deque
 from .process import Process
 
 
-def round_robin_schedule(processes: List[Process], time_quantum: int) -> List[Process]:
+def round_robin_schedule(processes: List[Process], time_quantum: int) -> Tuple[List[Process], List[Tuple[int, int, int]]]:
     """
     Round Robin scheduling simulation.
     Args:
@@ -16,7 +16,8 @@ def round_robin_schedule(processes: List[Process], time_quantum: int) -> List[Pr
     queue = deque(sorted(processes, key=lambda p: p.arrival_time))
     current_time = 0
     finished = []
-
+    # To store the history of execution for the chart 
+    timeline = []
     # Ready queue for processes that have arrived
     ready = deque()
 
@@ -38,6 +39,7 @@ def round_robin_schedule(processes: List[Process], time_quantum: int) -> List[Pr
 
         # Execute for time_quantum or until completion
         exec_time = min(time_quantum, proc.remaining_time)
+        timeline.append((proc.pid, current_time, current_time + exec_time)) # the actual timeline,like where it exectued
         proc.remaining_time -= exec_time
         current_time += exec_time
 
@@ -50,4 +52,4 @@ def round_robin_schedule(processes: List[Process], time_quantum: int) -> List[Pr
             proc.state = "terminated"
             finished.append(proc)
 
-    return finished
+    return finished, timeline

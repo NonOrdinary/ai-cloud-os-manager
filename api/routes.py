@@ -31,6 +31,7 @@ def submit_job(job: JobRequest):
 @router.get("/metrics", response_model=MetricsResponse)
 def get_metrics(
     #the query thing tells server to look for algo(configuration) in HTTP request URL and not json body
+    # description is just there for the documentation thingy
     algo: str = Query("fcfs", description="Scheduling algorithm: 'fcfs' or 'rr'"),
     quantum: int = Query(2, gt=0, description="Time quantum for Round Robin")
 ):
