@@ -1,8 +1,3 @@
-**Project: AI-Powered Cloud OS Process Manager**
-
-This canvas outlines the folder structure, core modules, and initial code templates for your flagship project. We'll iterate on each component in subsequent steps.
-
----
 
 ## 1. Folder Structure
 
@@ -46,14 +41,3 @@ ai_os_process_manager/
 └── requirements.txt        # Python dependencies
 ```
 
----
-
-## 2. Next Steps
-
-1. **scheduler/process.py**: Define `Process` class with attributes and states.
-2. **scheduler/fcfs.py**: Implement FCFS simulation function.
-3. **scheduler/round\_robin.py**: Implement Round Robin logic.
-4. **scheduler/metrics.py**: Functions for wait time, turnaround, utilization.
-5. **scheduler/simulator.py**: Orchestrate time loop and integrate metric collection.
-
-We'll begin with **`scheduler/process.py`** in the next step. Copy the canvas to start coding.

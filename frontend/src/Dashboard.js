@@ -63,7 +63,7 @@ export default function Dashboard() {
 
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ flex: 1 }}>
-          <JobForm onSimulate={handleSimulate} apiBase="" />
+          <JobForm onSimulate={handleSimulate} apiBase="http://127.0.0.1:8000" />
           <section style={{ marginTop: 10 }}>
             <h3>Events (live)</h3>
             <ul style={{ maxHeight: 220, overflow: "auto", background: "#fff", padding: 8, border: "1px solid #eee" }}>
