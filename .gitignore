@@ -14,7 +14,7 @@ venv/
 # Logs and temp files
 *.log
 *.tmp
-.plan
+*.plan
 # React / Node
 frontend/node_modules/
 
