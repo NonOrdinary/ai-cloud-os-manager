@@ -1,65 +1,85 @@
 // frontend/src/components/GanttChart.js
 import React from "react";
 
-/**
- * props:
- *  - details: array of { pid, arrival, burst, start, finish, ... }
- *  - heightPerRow: optional
- */
-export default function GanttChart({ details = [], heightPerRow = 24 }) {
+export default function GanttChart({ details = [], heightPerRow = 40 }) {
   if (!details || !details.length) {
-    return <div style={{ padding: 8 }}>No Gantt data yet.</div>;
+    return <div style={{ padding: 8, color: "#666" }}>Waiting for simulation...</div>;
   }
 
-  // Normalize: sort by start time
-  const rows = details.slice().sort((a, b) => a.start - b.start || a.pid - b.pid);
+  // 1. Identify Unique PIDs to assign static rows
+  const uniquePids = Array.from(new Set(details.map(d => d.pid))).sort((a,b) => a-b);
+  const pidToRowIndex = {};
+  uniquePids.forEach((pid, index) => {
+    pidToRowIndex[pid] = index;
+  });
 
-  const minT = Math.min(...rows.map((r) => r.start));
-  const maxT = Math.max(...rows.map((r) => r.finish));
-  const total = Math.max(1, maxT - minT);
+  // 2. Calculate Chart Dimensions
+  const maxTime = Math.max(...details.map((r) => r.finish));
+  const totalDuration = Math.max(1, maxTime);
+  
+  const width = 800;
+  const chartHeight = uniquePids.length * heightPerRow + 50;
+  const leftMargin = 60;
+  const chartWidth = width - leftMargin - 20;
 
-  const width = 700; // px
-  const height = rows.length * heightPerRow + 40;
+  const timeToX = (t) => (t / totalDuration) * chartWidth + leftMargin;
 
-  const timeToX = (t) => ((t - minT) / total) * (width - 100) + 80; // left margin
+  // Colors for different PIDs
+  const colors = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   return (
-    <svg width={width} height={height} style={{ border: "1px solid #eee", background: "#fafafa" }}>
-      {/* time axis */}
-      <g>
-        <text x={10} y={14} fontSize={12}>Gantt Chart</text>
-      </g>
+    <svg width={width} height={chartHeight} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", background: "#ffffff" }}>
+      
+      {/* Y-Axis Labels (PID names) */}
+      {uniquePids.map((pid, i) => (
+        <text 
+          key={pid} 
+          x={10} 
+          y={i * heightPerRow + 30 + heightPerRow/2} 
+          fontSize={14} 
+          fontWeight="bold" 
+          fill="#374151"
+        >
+          PID {pid}
+        </text>
+      ))}
 
-      {/* rows */}
-      {rows.map((r, i) => {
-        const y = i * heightPerRow + 30;
-        const x1 = timeToX(r.start);
-        const x2 = timeToX(r.finish);
-        const w = Math.max(2, x2 - x1);
+      {/* Grid Lines (Vertical) */}
+      {Array.from({ length: 11 }).map((_, i) => {
+        const t = (i / 10) * totalDuration;
+        const x = timeToX(t);
         return (
-          <g key={r.pid}>
-            <text x={10} y={y + heightPerRow / 2 + 4} fontSize={12}>PID {r.pid}</text>
-            <rect x={x1} y={y} width={w} height={heightPerRow - 6} rx={3} ry={3} fill="#4f46e5" opacity={0.9}/>
-            <text x={x1 + 6} y={y + heightPerRow / 2 + 4} fontSize={11} fill="#fff">
-              {r.start} → {r.finish}
-            </text>
+          <g key={i}>
+            <line x1={x} y1={30} x2={x} y2={chartHeight - 20} stroke="#e5e7eb" strokeDasharray="4" />
+            <text x={x} y={chartHeight - 5} fontSize={10} textAnchor="middle" fill="#9ca3af">{Math.round(t)}</text>
           </g>
         );
       })}
 
-      {/* time ticks at bottom */}
-      <g>
-        {Array.from({ length: 6 }).map((_, i) => {
-          const t = minT + (i / 5) * total;
-          const x = timeToX(t);
-          return (
-            <g key={i}>
-              <line x1={x} y1={height - 20} x2={x} y2={height - 16} stroke="#999" />
-              <text x={x - 10} y={height - 4} fontSize={11}>{Math.round(t)}</text>
-            </g>
-          );
-        })}
-      </g>
+      {/* The Bars (Time Slices) */}
+      {details.map((r, i) => {
+        const rowIndex = pidToRowIndex[r.pid];
+        const y = rowIndex * heightPerRow + 40;
+        const x1 = timeToX(r.start);
+        const x2 = timeToX(r.finish);
+        const w = Math.max(1, x2 - x1);
+        
+        return (
+          <g key={i}>
+            <rect 
+              x={x1} y={y} width={w} height={heightPerRow - 16} 
+              rx={4} ry={4} 
+              fill={colors[r.pid % colors.length]} 
+              opacity={0.9}
+            />
+            {w > 20 && (
+              <text x={x1 + w/2} y={y + 14} fontSize={10} fill="white" textAnchor="middle" pointerEvents="none">
+                {r.finish - r.start}ms
+              </text>
+            )}
+          </g>
+        );
+      })}
     </svg>
   );
 }

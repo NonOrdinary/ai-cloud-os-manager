@@ -44,6 +44,10 @@ def round_robin_schedule(processes: List[Process], time_quantum: int) -> Tuple[L
         current_time += exec_time
 
         # If process still has work, requeue it
+        # but remember the new process are to be given 
+        # turn first so add new processes before the last executed one
+        while queue and queue[0].arrival_time <= current_time:
+            ready.append(queue.popleft())
         if proc.remaining_time > 0:
             proc.state = "ready"
             ready.append(proc)

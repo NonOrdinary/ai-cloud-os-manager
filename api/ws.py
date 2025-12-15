@@ -99,7 +99,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             # Send Final Score
             metrics = sim.get_metrics()
-            await manager.send_json({"event": "metrics", **metrics}, websocket)
+            await manager.send_json({"event": "metrics","algorithm": algo, **metrics}, websocket)
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)

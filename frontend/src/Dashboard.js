@@ -1,30 +1,43 @@
-
-import React, { useEffect, useRef, useState } from "react";
+// frontend/src/Dashboard.js
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { createWebSocket } from "./wsClient";
 import JobForm from "./components/JobForm";
-import GanttChart from "./components/GanttChart"; // if you have this component
+import GanttChart from "./components/GanttChart";
 
-
-
-/**
- * Dashboard:
- *  - maintains ws connection
- *  - collects events (start/finish)
- *  - holds latest metrics and details for Gantt
- */
 export default function Dashboard() {
   const [events, setEvents] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const wsRef = useRef(null);
 
+  // --- LOGIC: Compute Gantt Slices from Events ---
+  const ganttData = useMemo(() => {
+    const slices = [];
+    const tempStarts = {}; 
+
+    events.forEach((ev) => {
+      if (ev.event === "start") {
+        tempStarts[ev.pid] = ev.time;
+      } else if (ev.event === "finish") {
+        const start = tempStarts[ev.pid];
+        if (start !== undefined) {
+          slices.push({ 
+            pid: ev.pid, 
+            start: start, 
+            finish: ev.time 
+          });
+          delete tempStarts[ev.pid];
+        }
+      }
+    });
+    return slices;
+  }, [events]);
+
+  // --- LOGIC: WebSocket Setup ---
   useEffect(() => {
-    // createWebSocket takes a callback for incoming messages
     const ws = createWebSocket((data) => {
       if (data.event === "metrics") {
-        // metrics likely contains details array
         setMetrics(data);
       } else {
-        // start/finish events
         setEvents((prev) => [...prev, data]);
       }
     });
@@ -35,11 +48,12 @@ export default function Dashboard() {
     };
   }, []);
 
-  // simulateHandler is passed to JobForm: sends jobs/algo/quantum over WS
   function handleSimulate(jobs, algo = "fcfs", quantum = 2) {
+    setEvents([]); 
+    setMetrics(null);
+
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      // Try to open a fresh WS and send after open
       const temp = new WebSocket("ws://127.0.0.1:8000/ws");
       temp.onopen = () => {
         temp.send(JSON.stringify({ jobs, algo, quantum }));
@@ -49,48 +63,67 @@ export default function Dashboard() {
         if (data.event === "metrics") setMetrics(data);
         else setEvents((prev) => [...prev, data]);
       };
-      temp.onerror = (err) => console.error(err);
       wsRef.current = temp;
       return;
     }
-
     ws.send(JSON.stringify({ jobs, algo, quantum }));
   }
 
+  // --- VIEW: Vertical Stack Layout (Safer) ---
   return (
-    <div style={{ padding: 14 }}>
-      <h1>AI-OS Process Manager — Dashboard</h1>
+    <div style={{ padding: "20px", fontFamily: "sans-serif", maxWidth: "1000px", margin: "0 auto" }}>
+      <h1 style={{ marginBottom: "20px" }}>AI-OS Process Manager</h1>
 
-      <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <JobForm onSimulate={handleSimulate} apiBase="http://127.0.0.1:8000" />
-          <section style={{ marginTop: 10 }}>
-            <h3>Events (live)</h3>
-            <ul style={{ maxHeight: 220, overflow: "auto", background: "#fff", padding: 8, border: "1px solid #eee" }}>
+      {/* TOP SECTION: FORM */}
+      <div style={{ marginBottom: "30px" }}>
+        <JobForm onSimulate={handleSimulate} apiBase="http://127.0.0.1:8000" />
+      </div>
+
+      {/* MIDDLE SECTION: CHART (Scrollable if too wide) */}
+      <div style={{ marginBottom: "30px" }}>
+        <h3>Gantt Chart (Live)</h3>
+        <div style={{ overflowX: "auto", border: "1px solid #ccc", padding: "10px", background: "#f9f9f9" }}>
+           <GanttChart details={ganttData} />
+        </div>
+      </div>
+
+      {/* BOTTOM SECTION: LOGS & METRICS */}
+      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+        
+        {/* Left: Events Log */}
+        <div style={{ flex: 1, minWidth: "300px" }}>
+          <h4>Execution Log</h4>
+          <ul style={{ 
+              height: "200px", overflowY: "auto", 
+              background: "#1e1e1e", color: "#00ff00", 
+              padding: "10px", borderRadius: "4px", listStyle: "none", fontFamily: "monospace", margin: 0 
+            }}>
+              {events.length === 0 && <li style={{color: "#555"}}>Waiting for simulation...</li>}
               {events.map((ev, idx) => (
                 <li key={idx}>
-                  [{ev.time}] PID {ev.pid} — <strong>{ev.event}</strong>
+                  <span style={{color: "#888"}}>[{ev.time.toString().padStart(3, '0')}]</span> 
+                  {" "}PID {ev.pid} : 
+                  <strong style={{ color: ev.event === "start" ? "#4fc3f7" : "#ff8a65" }}> {ev.event.toUpperCase()}</strong>
                 </li>
               ))}
+              <div ref={(el) => el?.scrollIntoView({ behavior: "smooth" })} />
             </ul>
-          </section>
         </div>
 
-        <div style={{ flex: 1 }}>
-          <h3>Gantt / Metrics</h3>
-          <div style={{ marginBottom: 12 }}>
-            <GanttChart details={metrics?.details || []} />
-          </div>
-
-          {metrics ? (
-            <div style={{ padding: 8, border: "1px solid #eee", background: "#fff" }}>
-              <p><strong>Algorithm:</strong> {metrics.algorithm}</p>
-              <p><strong>Avg Turnaround:</strong> {Number(metrics.average_turnaround_time).toFixed(2)}</p>
-              <p><strong>Avg Waiting:</strong> {Number(metrics.average_waiting_time).toFixed(2)}</p>
-              <p><strong>Process Count:</strong> {metrics.process_count}</p>
+        {/* Right: Metrics Scorecard */}
+        <div style={{ flex: 1, minWidth: "200px" }}>
+           <h4>Metrics Report</h4>
+           {metrics ? (
+            <div style={{ padding: "15px", border: "1px solid #4caf50", background: "#e8f5e9", borderRadius: "4px" }}>
+              <p style={{margin: "5px 0"}}><strong>Algorithm:</strong> {metrics.algorithm.toUpperCase()}</p>
+              <p style={{margin: "5px 0"}}><strong>Avg Turnaround:</strong> {Number(metrics.average_turnaround_time).toFixed(2)}ms</p>
+              <p style={{margin: "5px 0"}}><strong>Avg Waiting:</strong> {Number(metrics.average_waiting_time).toFixed(2)}ms</p>
+              <p style={{margin: "5px 0"}}><strong>Total Jobs:</strong> {metrics.process_count}</p>
             </div>
           ) : (
-            <div style={{ padding: 8 }}>No metrics yet — run a simulation.</div>
+            <div style={{ padding: "15px", border: "1px dashed #ccc", background: "#fafafa", borderRadius: "4px", color: "#666" }}>
+              Simulation in progress or waiting to start...
+            </div>
           )}
         </div>
       </div>
