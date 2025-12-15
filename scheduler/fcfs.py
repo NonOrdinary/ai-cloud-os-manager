@@ -35,4 +35,4 @@ def fcfs_schedule(processes: List[Process]) -> List[Process]:
 
         finished.append(proc)
 
-    return finished
+    return finished # result is the list of process objects

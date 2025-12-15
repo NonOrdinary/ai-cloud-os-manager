@@ -10,13 +10,14 @@ from scheduler.process import Process
 router = APIRouter()
 
 # In‑memory store of submitted jobs
-jobs: List[Process] = []
+jobs: List[Process] = [] #type hint , enforcing the data that would be in job(list of processes)
 
 
-@router.post("/jobs", status_code=201)
+@router.post("/jobs", status_code=201)  # status tellls that it has successfully created resources
 def submit_job(job: JobRequest):
     """
     Submit a new process/job to the scheduler.
+    Frontend to logic layer data transmission
     """
     proc = Process(
         pid=job.pid,
@@ -29,6 +30,7 @@ def submit_job(job: JobRequest):
 
 @router.get("/metrics", response_model=MetricsResponse)
 def get_metrics(
+    #the query thing tells server to look for algo(configuration) in HTTP request URL and not json body
     algo: str = Query("fcfs", description="Scheduling algorithm: 'fcfs' or 'rr'"),
     quantum: int = Query(2, gt=0, description="Time quantum for Round Robin")
 ):
